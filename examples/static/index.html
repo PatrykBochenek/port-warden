@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>port-warden playground</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --card-border: #262b36;
+    --text: #e6e8ec;
+    --muted: #8b93a3;
+    --accent: #4f8cff;
+    --accent-dark: #3a6fd6;
+    --green: #3fb950;
+    --red: #f85149;
+    --amber: #d29922;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  header h1 { font-size: 24px; margin: 0; }
+  header h1 span { color: var(--accent); }
+  header .version { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 8px 20px 40px;
+    display: grid;
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 1px 8px;
+  }
+  .hint { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+  .hint code { font-family: var(--mono); background: #0f1115; padding: 1px 5px; border-radius: 4px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .row label { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .row.buttons { margin-top: 12px; margin-bottom: 0; }
+  .inline { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  input[type="number"], input[type="text"] {
+    background: #0f1115;
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-family: var(--mono);
+    font-size: 14px;
+    width: 110px;
+  }
+  input[type="number"]:focus, input[type="text"]:focus { outline: none; border-color: var(--accent); }
+  button {
+    background: #222734;
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+  button.primary:hover { background: var(--accent); }
+  button.danger { background: #7d2b26; border-color: #7d2b26; color: #fff; }
+  button.danger:hover { background: #a33b34; }
+  .pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .pill.ok { background: rgba(63, 185, 80, .15); color: var(--green); border: 1px solid rgba(63, 185, 80, .4); }
+  .pill.bad { background: rgba(248, 81, 73, .15); color: var(--red); border: 1px solid rgba(248, 81, 73, .4); }
+  .mono {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: #0f1115;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--card-border); font-family: var(--mono); }
+  th { color: var(--muted); font-weight: 500; }
+  td.ok { color: var(--green); }
+  td.bad { color: var(--red); }
+  #log { max-height: 260px; overflow-y: auto; font-family: var(--mono); font-size: 12.5px; }
+  #log .entry { padding: 3px 0; border-bottom: 1px dashed #1d212b; display: flex; gap: 10px; }
+  #log .entry .t { color: var(--muted); flex: none; }
+  #log .entry.ok .m { color: var(--green); }
+  #log .entry.error .m { color: var(--red); }
+  #log .entry.warn .m { color: var(--amber); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>port-warden <span>playground</span></h1>
+  <div class="version">library v<span id="lib-version">?</span></div>
+</header>
+
+<main>
+  <section class="card" id="inspect">
+    <h2>Inspect &amp; control a port</h2>
+    <div class="row">
+      <label>Port <input id="inspect-port" type="number" min="1" max="65535" value="8000"></label>
+      <button id="btn-check" class="primary">Check</button>
+    </div>
+    <div id="status-pill" class="pill hidden"></div>
+    <pre id="info-box" class="mono hidden"></pre>
+    <div class="row buttons">
+      <button id="btn-info">Get info</button>
+      <button id="btn-wait">Wait until free</button>
+      <label class="inline">timeout <input id="wait-timeout" type="number" min="1" max="300" value="10" style="width:70px"></label>
+      <button id="btn-kill" class="danger">Kill</button>
+      <label class="inline"><input id="kill-force" type="checkbox"> force</label>
+    </div>
+  </section>
+
+  <section class="card" id="find">
+    <h2>Find a free port</h2>
+    <div class="row">
+      <label>Preferred <input id="preferred" type="number" min="1" max="65535" placeholder="optional"></label>
+      <button id="btn-find" class="primary">Find free</button>
+    </div>
+    <pre id="find-result" class="mono hidden"></pre>
+  </section>
+
+  <section class="card" id="scan-card">
+    <h2>Scan ports</h2>
+    <div class="row">
+      <label>Ports <input id="scan-ports" type="text" value="8000, 8001, 5432" placeholder="8000, 8001, 5432" style="width:220px"></label>
+      <button id="btn-scan" class="primary">Scan</button>
+    </div>
+    <table id="scan-table" class="hidden">
+      <thead><tr><th>port</th><th>status</th><th>pid</th><th>name</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="demo">
+    <h2>Demo server <span class="tag">real process</span></h2>
+    <p class="hint">Starts a Python subprocess listening on the port, so you can try <code>get_info</code>, <code>kill</code> and <code>wait_until_free</code> on an actual process. Try: start a server, inspect it, then kill it.</p>
+    <div class="row">
+      <label>Port <input id="demo-port" type="number" min="1" max="65535" value="8600"></label>
+      <button id="btn-demo-start" class="primary">Start server</button>
+      <button id="btn-demo-stop" class="danger">Stop server</button>
+    </div>
+    <pre id="demo-status" class="mono hidden"></pre>
+  </section>
+
+  <section class="card" id="log-card">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function log(msg, kind = 'info') {
+  const el = document.createElement('div');
+  el.className = 'entry ' + kind;
+  const time = new Date().toLocaleTimeString();
+  el.innerHTML = '<span class="t"></span><span class="m"></span>';
+  el.querySelector('.t').textContent = time;
+  el.querySelector('.m').textContent = msg;
+  $('log').prepend(el);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* non-JSON response */ }
+  if (!res.ok) {
+    let detail = res.statusText;
+    if (data && data.detail) {
+      detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+    }
+    throw new Error(detail);
+  }
+  return data;
+}
+
+function getPort(inputId) {
+  const v = parseInt($(inputId).value, 10);
+  if (!Number.isInteger(v) || v < 1 || v > 65535) throw new Error('port must be an integer between 1 and 65535');
+  return v;
+}
+
+async function checkAvailability(port) {
+  const d = await api('/api/available?port=' + port);
+  const pill = $('status-pill');
+  pill.classList.remove('hidden');
+  pill.className = 'pill ' + (d.available ? 'ok' : 'bad');
+  pill.textContent = d.available
+    ? 'port ' + port + ' is AVAILABLE'
+    : 'port ' + port + ' is IN USE';
+  return d.available;
+}
+
+$('btn-check').onclick = async () => {
+  try {
+    const port = getPort('inspect-port');
+    log('checking port ' + port + '...');
+    await checkAvailability(port);
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-info').onclick = async () => {
+  try {
+    const port = getPort('inspect-port');
+    const d = await api('/api/info?port=' + port);
+    const box = $('info-box');
+    box.classList.remove('hidden');
+    if (!d.info) {
+      box.textContent = 'port ' + port + ': no process (free)';
+      log('get_info(' + port + ') -> None');
+    } else {
+      box.textContent = 'pid:  ' + d.info.pid + '\nname: ' + d.info.name + '\ncmd:  ' + d.info.cmd;
+      log('get_info(' + port + ') -> pid ' + d.info.pid + ' (' + d.info.name + ')');
+    }
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-wait').onclick = async () => {
+  try {
+    const port = getPort('inspect-port');
+    const timeout = parseInt($('wait-timeout').value, 10) || 30;
+    log('waiting up to ' + timeout + 's for port ' + port + ' to free...');
+    const d = await api('/api/wait', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: port, timeout: timeout })
+    });
+    log('wait_until_free(' + port + ', timeout=' + timeout + ') -> ' + d.became_free +
+        ' (waited ' + d.waited_ms + ' ms)', d.became_free ? 'ok' : 'warn');
+    await checkAvailability(port);
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-kill').onclick = async () => {
+  try {
+    const port = getPort('inspect-port');
+    const force = $('kill-force').checked;
+    log('killing port ' + port + ' (force=' + force + ')...');
+    const d = await api('/api/kill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: port, force: force })
+    });
+    log('kill(' + port + ', force=' + force + ') -> ' + d.killed, 'ok');
+    await checkAvailability(port);
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-find').onclick = async () => {
+  try {
+    const prefRaw = $('preferred').value.trim();
+    let url = '/api/find-free';
+    if (prefRaw) url += '?preferred=' + parseInt(prefRaw, 10);
+    const d = await api(url);
+    $('find-result').classList.remove('hidden');
+    $('find-result').textContent = 'free port: ' + d.port;
+    log('find_free(' + (prefRaw || 'None') + ') -> ' + d.port, 'ok');
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-scan').onclick = async () => {
+  try {
+    const ports = $('scan-ports').value.split(',').map(s => parseInt(s.trim(), 10)).filter(Number.isInteger);
+    if (!ports.length) throw new Error('no valid ports given');
+    const d = await api('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ports: ports })
+    });
+    renderScanTable(d.results);
+    const busy = Object.entries(d.results).filter(([, v]) => v).length;
+    log('scan([' + ports.join(', ') + ']) -> ' + busy + ' port(s) in use');
+  } catch (e) { log(e.message, 'error'); }
+};
+
+function renderScanTable(results) {
+  const table = $('scan-table');
+  table.classList.remove('hidden');
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+  Object.entries(results)
+    .sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10))
+    .forEach(([port, info]) => {
+      const tr = document.createElement('tr');
+      if (info) {
+        tr.innerHTML = '<td>' + port + '</td><td class="bad">in use</td><td>' + info.pid +
+          '</td><td>' + escapeHtml(info.name) + '</td>';
+      } else {
+        tr.innerHTML = '<td>' + port + '</td><td class="ok">free</td><td>-</td><td>-</td>';
+      }
+      tbody.appendChild(tr);
+    });
+}
+
+$('btn-demo-start').onclick = async () => {
+  try {
+    const port = getPort('demo-port');
+    const d = await api('/api/demo/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: port })
+    });
+    $('demo-status').classList.remove('hidden');
+    $('demo-status').textContent = 'running — pid ' + d.pid + ' on port ' + d.port;
+    log('demo server started on port ' + port + ' (pid ' + d.pid + ')', 'ok');
+  } catch (e) { log(e.message, 'error'); }
+};
+
+$('btn-demo-stop').onclick = async () => {
+  try {
+    const port = getPort('demo-port');
+    const d = await api('/api/demo/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port: port })
+    });
+    $('demo-status').classList.remove('hidden');
+    $('demo-status').textContent = 'stopped';
+    log('demo server on port ' + port + ' stopped', 'ok');
+  } catch (e) { log(e.message, 'error'); }
+};
+
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+(async () => {
+  try {
+    const d = await api('/api/version');
+    $('lib-version').textContent = d.version;
+    log('connected — port-warden v' + d.version);
+  } catch (e) {
+    $('lib-version').textContent = '?';
+    log('could not reach the API: ' + e.message, 'error');
+  }
+})();
+</script>
+</body>
+</html>
