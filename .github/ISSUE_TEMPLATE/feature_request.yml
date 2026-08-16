@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a new feature or improvement for port-warden
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an idea! Please describe the problem you're
+        solving and the shape of the solution you have in mind.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should the feature work? API sketches welcome.
+      placeholder: |
+        ```python
+        port_warden.wait_until_free(5432, interval=0.2)
+        ```
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or alternative designs you've thought of.
