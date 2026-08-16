@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install Python tooling
+        run: pip install ruff mypy maturin pytest
+      - name: Ruff check
+        run: ruff check python/ tests/ examples/
+      - name: Ruff format
+        run: ruff format --check python/ tests/ examples/
+      - name: Mypy (strict)
+        run: mypy python/port_warden tests
+      - name: Stubtest (stubs vs runtime)
+        run: |
+          maturin develop
+          python -m mypy.stubtest port_warden._lib --allowlist tests/stubtest-allowlist.txt
+      - name: Cargo fmt
+        run: cargo fmt -- --check
+      - name: Cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Cargo test
+        run: cargo test
+      - name: Zizmor (GitHub Actions security audit)
+        run: |
+          pip install zizmor
+          zizmor --min-severity high .github/workflows/
+
+  test:
+    name: Test (${{ matrix.os }} / ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin
+        run: pip install maturin pytest
+      - name: Build and install extension
+        run: maturin develop
+      - name: Run tests
+        run: pytest tests/ -v
+
+  freethreaded:
+    name: Test (free-threaded 3.14t)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14t"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin
+        run: pip install maturin pytest
+      - name: Build and install extension
+        run: maturin develop
+      - name: Run tests
+        run: pytest tests/ -v
+
+  wheel:
+    name: Wheel & sdist install test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin
+        run: pip install maturin pytest
+      - name: Build and test wheel
+        run: |
+          maturin build --release --locked --out dist
+          pip install dist/*.whl
+          python -m pytest tests/ -q
+      - name: Build and test sdist
+        run: |
+          maturin sdist --out dist
+          pip install dist/*.tar.gz
+          python -m pytest tests/ -q
