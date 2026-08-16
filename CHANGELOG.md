@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.0 (2026-08-16)
+
+
+### Features
+
+* rename python package and add typed stubs ([cfbcd68](https://github.com/PatrykBochenek/portly/commit/cfbcd68b18a2b7751837ed2d226caafb68cb2cda))
+
+
+### Bug Fixes
+
+* clippy flatten lint and Windows wheel install glob ([66c90dc](https://github.com/PatrykBochenek/portly/commit/66c90dce62e7259d935026cc26d4f9f1c1eb36a6))
+* clippy manual-flatten on the Linux socket table loops ([061c010](https://github.com/PatrykBochenek/portly/commit/061c010ca90f53c6d3efc8e21c8a40709ab3678f))
+* compile on Linux and Windows ([e300527](https://github.com/PatrykBochenek/portly/commit/e300527d5172146b0561a4bd47c127ee28c37d92))
+
 ## [Unreleased]
 
 ## [0.1.0] - 2026-08-16
