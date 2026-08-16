@@ -60,22 +60,30 @@ There is also a pre-commit config; install it with
 
 ## Versioning and releases
 
-portly follows [SemVer](https://semver.org/). The version is
-single-sourced in `Cargo.toml`; `pyproject.toml` uses `dynamic = ["version"]`.
+portly follows [SemVer](https://semver.org/). The version is single-sourced in
+`Cargo.toml`; `pyproject.toml` uses `dynamic = ["version"]`.
 
-Releases are cut from the `main` branch:
+Releases are driven by [release-please](https://github.com/googleapis/release-please),
+which parses conventional commits and maintains release PRs:
 
-1. Update `CHANGELOG.md` (keep a changelog format), commit, and push.
-2. Create an annotated tag matching the `Cargo.toml` version and push it:
+1. Merge conventional commits to `main` (`feat:` → minor, `fix:` → patch,
+   `feat!:`/`fix!:`/`BREAKING CHANGE` → major).
+2. release-please opens a `chore(main): release vX.Y.Z` PR that bumps
+   `Cargo.toml`/`Cargo.lock` and rewrites `CHANGELOG.md`.
+3. Merge the release PR. release-please creates the `vX.Y.Z` tag and GitHub
+   Release, then dispatches the `release.yml` workflow, which builds wheels for
+   all platforms (manylinux/musllinux/Windows/macOS + sdist) and publishes to
+   PyPI via Trusted Publishing with PEP 740 attestations.
 
-   ```bash
-   git tag -a v0.1.1 -m "portly v0.1.1"
-   git push origin v0.1.1
-   ```
+Notes:
 
-3. The `release.yml` workflow builds wheels for all platforms, publishes to
-   PyPI via Trusted Publishing, and creates a GitHub Release with release
-   notes.
+- The first release PR proposes `v0.1.0` (the rust release type's initial
+  version) and includes the entire history.
+- release-please uses `GITHUB_TOKEN`, so the repository setting **"Allow
+  GitHub Actions to create and approve pull requests"** (Settings → Actions →
+  General → Workflow permissions) must be enabled for CI to run on release PRs.
+- The tag/dispatch is gated on the `release_created` output, so the release
+  workflow only runs when release-please actually cut a release.
 
 ## Questions?
 

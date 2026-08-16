@@ -1,0 +1,34 @@
+name: Release Please
+
+# release-please opens a "chore(main): release vX.Y.Z" PR whenever conventional
+# commits land on main. Merging that PR bumps Cargo.toml/Cargo.lock and
+# CHANGELOG.md, then release-please creates the vX.Y.Z tag + GitHub Release.
+#
+# Because the tag is created with GITHUB_TOKEN, the tag-push event does NOT
+# trigger our release.yml (GitHub suppresses events caused by GITHUB_TOKEN).
+# Instead we dispatch release.yml on the tag via workflow_dispatch, which is
+# allowed for GITHUB_TOKEN.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@d1a8f221d7723166f48a584aebba00ef3f6febec  # v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-branch: main
+
+      - name: Trigger release build
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        run: gh workflow run release.yml --ref "${{ steps.release.outputs.tag_name }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
