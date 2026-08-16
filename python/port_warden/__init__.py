@@ -1,0 +1,32 @@
+"""port-warden — cross-platform Python port management made simple.
+
+A Rust-powered library to inspect, scan and free TCP/UDP ports.
+
+Example:
+    >>> import port_warden as pw
+    >>> pw.is_available(8000)
+    True
+    >>> port = pw.find_free(8000)
+    >>> pw.wait_until_free(5432, timeout=30)
+    True
+"""
+
+from port_warden._lib import (
+    __version__,
+    find_free,
+    get_info,
+    is_available,
+    kill,
+    scan,
+    wait_until_free,
+)
+
+__all__ = [
+    "__version__",
+    "find_free",
+    "get_info",
+    "is_available",
+    "kill",
+    "scan",
+    "wait_until_free",
+]
