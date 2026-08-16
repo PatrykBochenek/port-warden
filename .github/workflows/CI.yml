@@ -31,7 +31,8 @@ jobs:
         run: mypy python/port_warden tests
       - name: Stubtest (stubs vs runtime)
         run: |
-          maturin develop
+          maturin build --out dist
+          pip install dist/*.whl
           python -m mypy.stubtest port_warden._lib --allowlist tests/stubtest-allowlist.txt
       - name: Cargo fmt
         run: cargo fmt -- --check
@@ -60,8 +61,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install maturin
         run: pip install maturin pytest
-      - name: Build and install extension
-        run: maturin develop
+      - name: Build extension
+        run: maturin build --out dist
+      - name: Install extension
+        run: pip install dist/*.whl
       - name: Run tests
         run: pytest tests/ -v
 
@@ -76,8 +79,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install maturin
         run: pip install maturin pytest
-      - name: Build and install extension
-        run: maturin develop
+      - name: Build extension
+        run: maturin build --out dist
+      - name: Install extension
+        run: pip install dist/*.whl
       - name: Run tests
         run: pytest tests/ -v
 
