@@ -315,25 +315,27 @@ mod platform {
         fn socket_inodes(port: u16, listen_only: bool) -> HashSet<u64> {
             let mut inodes = HashSet::new();
 
-            for table in [procfs::net::tcp(), procfs::net::tcp6()] {
-                if let Ok(entries) = table {
-                    for entry in entries {
-                        if entry.local_address.port() == port
-                            && (!listen_only || entry.state == procfs::net::TcpState::Listen)
-                        {
-                            inodes.insert(entry.inode);
-                        }
+            for entries in [procfs::net::tcp(), procfs::net::tcp6()]
+                .into_iter()
+                .flatten()
+            {
+                for entry in entries {
+                    if entry.local_address.port() == port
+                        && (!listen_only || entry.state == procfs::net::TcpState::Listen)
+                    {
+                        inodes.insert(entry.inode);
                     }
                 }
             }
 
             if !listen_only {
-                for table in [procfs::net::udp(), procfs::net::udp6()] {
-                    if let Ok(entries) = table {
-                        for entry in entries {
-                            if entry.local_address.port() == port {
-                                inodes.insert(entry.inode);
-                            }
+                for entries in [procfs::net::udp(), procfs::net::udp6()]
+                    .into_iter()
+                    .flatten()
+                {
+                    for entry in entries {
+                        if entry.local_address.port() == port {
+                            inodes.insert(entry.inode);
                         }
                     }
                 }
@@ -538,7 +540,7 @@ mod platform {
     use std::ptr::addr_of;
     use std::slice;
     use windows_sys::Win32::Foundation::{
-        CloseHandle, GetLastError, ERROR_ACCESS_DENIED, ERROR_INSUFFICIENT_BUFFER, FALSE, HANDLE,
+        CloseHandle, GetLastError, ERROR_ACCESS_DENIED, ERROR_INSUFFICIENT_BUFFER, FALSE,
         INVALID_HANDLE_VALUE, NO_ERROR,
     };
     use windows_sys::Win32::NetworkManagement::IpHelper::{
