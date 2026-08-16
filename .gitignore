@@ -1,0 +1,32 @@
+# Rust
+/target
+**/*.rs.bk
+# Cargo.lock is committed intentionally (reproducible wheel/sdist builds).
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maturin
+wheelhouse/

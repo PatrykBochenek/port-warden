@@ -1,0 +1,80 @@
+[build-system]
+requires = ["maturin>=1.14,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "port-warden"
+# Version is single-sourced from Cargo.toml (see [tool.maturin]).
+dynamic = ["version"]
+description = "Cross-platform Python port management made simple"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Patryk Bochenek", email = "contact@patrykbochenek.com" }
+]
+keywords = [
+    "port",
+    "tcp",
+    "network",
+    "process",
+    "sysadmin",
+    "dev-tools",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/PatrykBochenek/port-warden"
+Repository = "https://github.com/PatrykBochenek/port-warden"
+Issues = "https://github.com/PatrykBochenek/port-warden/issues"
+Changelog = "https://github.com/PatrykBochenek/port-warden/blob/main/CHANGELOG.md"
+
+# Dev dependencies for local development and CI. Install with `uv sync --group dev`.
+[dependency-groups]
+dev = [
+    "maturin>=1.14,<2.0",
+    "pytest>=9.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.16",
+    "mypy>=2.0",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "port_warden._lib"
+
+[tool.maturin.generate-ci.github]
+trusted-publishing = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["python", "tests", "examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+mypy_path = ["python"]
+files = ["python/port_warden", "tests"]
+strict = true
+warn_unreachable = true
