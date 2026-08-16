@@ -1,4 +1,4 @@
-"""Examples: port-warden playground — a small FastAPI app to try out the library.
+"""Examples: portly playground — a small FastAPI app to try out the library.
 
 Run from the repo root with:
 
@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-import port_warden
+import portly
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -53,7 +53,7 @@ async def lifespan(_: FastAPI):
     _demo_servers.clear()
 
 
-app = FastAPI(title="port-warden playground", lifespan=lifespan)
+app = FastAPI(title="portly playground", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -80,18 +80,18 @@ def index() -> FileResponse:
 
 @app.get("/api/version")
 def version() -> dict:
-    return {"version": port_warden.__version__}
+    return {"version": portly.__version__}
 
 
 @app.get("/api/available")
 def available(port: int = Query(ge=1, le=65535)) -> dict:
-    return {"port": port, "available": port_warden.is_available(port)}
+    return {"port": port, "available": portly.is_available(port)}
 
 
 @app.get("/api/find-free")
 def find_free(preferred: int | None = Query(default=None, ge=1, le=65535)) -> dict:
     try:
-        port = port_warden.find_free(preferred)
+        port = portly.find_free(preferred)
     except OSError as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
     return {"port": port}
@@ -99,13 +99,13 @@ def find_free(preferred: int | None = Query(default=None, ge=1, le=65535)) -> di
 
 @app.get("/api/info")
 def info(port: int = Query(ge=1, le=65535)) -> dict:
-    return {"port": port, "info": port_warden.get_info(port)}
+    return {"port": port, "info": portly.get_info(port)}
 
 
 @app.post("/api/kill")
 def kill(body: KillBody) -> dict:
     try:
-        killed = port_warden.kill(body.port, force=body.force)
+        killed = portly.kill(body.port, force=body.force)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
     except OSError as e:
@@ -116,7 +116,7 @@ def kill(body: KillBody) -> dict:
 @app.post("/api/wait")
 def wait_free(body: WaitBody) -> dict:
     start = time.monotonic()
-    became_free = port_warden.wait_until_free(body.port, timeout=body.timeout)
+    became_free = portly.wait_until_free(body.port, timeout=body.timeout)
     waited_ms = int((time.monotonic() - start) * 1000)
     return {"port": body.port, "became_free": became_free, "waited_ms": waited_ms}
 
@@ -126,13 +126,13 @@ def scan(body: ScanBody) -> dict:
     for p in body.ports:
         if not 1 <= p <= 65535:
             raise HTTPException(status_code=422, detail=f"Port {p} is out of range")
-    return {"results": port_warden.scan(body.ports)}
+    return {"results": portly.scan(body.ports)}
 
 
 @app.post("/api/demo/start")
 def demo_start(body: PortBody) -> dict:
     """Spawn a real Python subprocess that listens on the given port."""
-    if not port_warden.is_available(body.port):
+    if not portly.is_available(body.port):
         raise HTTPException(status_code=409, detail=f"Port {body.port} is already in use")
     proc = subprocess.Popen(
         [sys.executable, "-c", DEMO_SCRIPT.format(port=body.port)],

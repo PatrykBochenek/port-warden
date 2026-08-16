@@ -1,4 +1,4 @@
-//! port-warden — cross-platform Python port management made simple.
+//! portly — cross-platform Python port management made simple.
 //!
 //! Thin PyO3 bindings around the [`port_check`] crate for TCP port
 //! availability, plus native process introspection and termination for the
@@ -82,8 +82,8 @@ fn wait_for_port_free(port: u16) -> bool {
 ///     True if port is available, False if in use
 ///
 /// Example:
-///     >>> import port_warden
-///     >>> port_warden.is_available(8000)
+///     >>> import portly
+///     >>> portly.is_available(8000)
 ///     True
 #[pyfunction]
 fn is_available(port: u16) -> bool {
@@ -115,8 +115,8 @@ fn is_available(port: u16) -> bool {
 ///     and letting the OS pick if you need a race-free reservation.
 ///
 /// Example:
-///     >>> port = port_warden.find_free(8000)
-///     >>> port = port_warden.find_free()  # Any free port
+///     >>> port = portly.find_free(8000)
+///     >>> port = portly.find_free()  # Any free port
 #[pyfunction]
 #[pyo3(signature = (preferred=None))]
 fn find_free(preferred: Option<u16>) -> PyResult<u16> {
@@ -143,7 +143,7 @@ fn find_free(preferred: Option<u16>) -> PyResult<u16> {
 ///     True if port became free, False if timeout reached
 ///
 /// Example:
-///     >>> port_warden.wait_until_free(5432, timeout=30)
+///     >>> portly.wait_until_free(5432, timeout=30)
 ///     True
 #[pyfunction]
 #[pyo3(signature = (port, timeout=30))]
@@ -188,9 +188,9 @@ fn wait_until_free(py: Python<'_>, port: u16, timeout: u64) -> bool {
 ///     macOS, and the executable name on Windows.
 ///
 /// Example:
-///     >>> port_warden.get_info(8000)
+///     >>> portly.get_info(8000)
 ///     {'pid': 1234, 'name': 'python', 'cmd': 'python app.py'}
-///     >>> port_warden.get_info(9999)
+///     >>> portly.get_info(9999)
 ///     None
 #[pyfunction]
 fn get_info(py: Python<'_>, port: u16) -> Option<HashMap<String, Py<PyAny>>> {
@@ -224,9 +224,9 @@ fn get_info(py: Python<'_>, port: u16) -> Option<HashMap<String, Py<PyAny>>> {
 ///     OSError: If kill failed for another reason
 ///
 /// Example:
-///     >>> port_warden.kill(8000)
+///     >>> portly.kill(8000)
 ///     True
-///     >>> port_warden.kill(8000, force=True)
+///     >>> portly.kill(8000, force=True)
 ///     True
 #[pyfunction]
 #[pyo3(signature = (port, force=false))]
@@ -263,7 +263,7 @@ fn kill(py: Python<'_>, port: u16, force: bool) -> PyResult<bool> {
 ///     Dict mapping port numbers to process info (or None if free)
 ///
 /// Example:
-///     >>> port_warden.scan([8000, 8001, 5432])
+///     >>> portly.scan([8000, 8001, 5432])
 ///     {8000: {'pid': 1234, 'name': 'python', 'cmd': 'python app.py'}, 8001: None, 5432: None}
 #[pyfunction]
 fn scan(py: Python<'_>, ports: Vec<u16>) -> HashMap<u16, Option<HashMap<String, Py<PyAny>>>> {

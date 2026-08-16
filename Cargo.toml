@@ -1,17 +1,17 @@
 [package]
-name = "port-warden"
+name = "portly"
 version = "0.1.0"
 edition = "2021"
 description = "Cross-platform Python port management made simple"
 license = "MIT"
-repository = "https://github.com/PatrykBochenek/port-warden"
+repository = "https://github.com/PatrykBochenek/portly"
 keywords = ["port", "tcp", "network", "process", "dev-tools"]
 categories = ["command-line-utilities", "network-programming"]
 authors = ["Patryk Bochenek <contact@patrykbochenek.com>"]
 rust-version = "1.85"
 
 [lib]
-name = "port_warden"
+name = "portly"
 crate-type = ["cdylib", "rlib"]
 
 [features]

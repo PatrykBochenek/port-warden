@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with port-warden
+description: Report a problem with portly
 labels: [bug]
 body:
   - type: markdown
@@ -26,16 +26,16 @@ body:
       description: Minimal code or commands that trigger the bug.
       placeholder: |
         ```python
-        import port_warden
-        port_warden.kill(8000)
+        import portly
+        portly.kill(8000)
         ```
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: port-warden version
-      description: e.g. 0.1.0 (check `python -c "import port_warden; print(port_warden.__version__)"`)
+      label: portly version
+      description: e.g. 0.1.0 (check `python -c "import portly; print(portly.__version__)"`)
     validations:
       required: true
   - type: dropdown

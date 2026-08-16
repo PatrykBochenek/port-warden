@@ -1,6 +1,6 @@
 # Security Policy
 
-port-warden manages processes and can terminate them, so security is taken
+portly manages processes and can terminate them, so security is taken
 seriously.
 
 ## Reporting a Vulnerability
@@ -10,7 +10,7 @@ seriously.
 Instead, report vulnerabilities privately via GitHub's private vulnerability
 reporting:
 
-<https://github.com/PatrykBochenek/port-warden/security/advisories/new>
+<https://github.com/PatrykBochenek/portly/security/advisories/new>
 
 Or by emailing the maintainer directly:
 [contact@patrykbochenek.com](mailto:contact@patrykbochenek.com).

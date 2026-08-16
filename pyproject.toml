@@ -3,7 +3,7 @@ requires = ["maturin>=1.14,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "port-warden"
+name = "portly"
 # Version is single-sourced from Cargo.toml (see [tool.maturin]).
 dynamic = ["version"]
 description = "Cross-platform Python port management made simple"
@@ -37,10 +37,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/PatrykBochenek/port-warden"
-Repository = "https://github.com/PatrykBochenek/port-warden"
-Issues = "https://github.com/PatrykBochenek/port-warden/issues"
-Changelog = "https://github.com/PatrykBochenek/port-warden/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/PatrykBochenek/portly"
+Repository = "https://github.com/PatrykBochenek/portly"
+Issues = "https://github.com/PatrykBochenek/portly/issues"
+Changelog = "https://github.com/PatrykBochenek/portly/blob/main/CHANGELOG.md"
 
 # Dev dependencies for local development and CI. Install with `uv sync --group dev`.
 [dependency-groups]
@@ -55,7 +55,7 @@ dev = [
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
-module-name = "port_warden._lib"
+module-name = "portly._lib"
 
 [tool.maturin.generate-ci.github]
 trusted-publishing = true
@@ -75,6 +75,6 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 [tool.mypy]
 python_version = "3.10"
 mypy_path = ["python"]
-files = ["python/port_warden", "tests"]
+files = ["python/portly", "tests"]
 strict = true
 warn_unreachable = true

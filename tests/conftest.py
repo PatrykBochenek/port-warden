@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for port-warden tests."""
+"""Shared pytest fixtures for portly tests."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from collections.abc import Iterator
 
 import pytest
 
-import port_warden
+import portly
 
 SERVER_SCRIPT = """
 import socket
@@ -61,7 +61,7 @@ def subprocess_server() -> Iterator[tuple[subprocess.Popen[bytes], int]]:
     The port is held by a SEPARATE process on purpose — the kill()
     tests must never kill the pytest process itself.
     """
-    port = port_warden.find_free()
+    port = portly.find_free()
     proc = subprocess.Popen(
         [sys.executable, "-c", SERVER_SCRIPT.format(port=port)],
         stdout=subprocess.PIPE,
@@ -72,7 +72,7 @@ def subprocess_server() -> Iterator[tuple[subprocess.Popen[bytes], int]]:
     line = proc.stdout.readline()
     assert line.strip() == b"ready", f"server subprocess failed: {line!r}"
     # Sanity: the port must actually be busy now.
-    assert not port_warden.is_available(port)
+    assert not portly.is_available(port)
     yield proc, port
     if proc.poll() is None:
         proc.kill()
