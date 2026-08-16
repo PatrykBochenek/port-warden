@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>port-warden playground</title>
+<title>portly playground</title>
 <style>
   :root {
     --bg: #0f1115;
@@ -127,7 +127,7 @@
 <body>
 
 <header>
-  <h1>port-warden <span>playground</span></h1>
+  <h1>portly <span>playground</span></h1>
   <div class="version">library v<span id="lib-version">?</span></div>
 </header>
 
@@ -370,7 +370,7 @@ function escapeHtml(s) {
   try {
     const d = await api('/api/version');
     $('lib-version').textContent = d.version;
-    log('connected — port-warden v' + d.version);
+    log('connected — portly v' + d.version);
   } catch (e) {
     $('lib-version').textContent = '?';
     log('could not reach the API: ' + e.message, 'error');

@@ -14,7 +14,7 @@
 
 - [ ] `cargo fmt --check` and `cargo clippy -- -D warnings` pass
 - [ ] `ruff check` and `ruff format --check` pass
-- [ ] `mypy python/port_warden tests` passes
+- [ ] `mypy python/portly tests` passes
 - [ ] `pytest tests/` passes
 - [ ] Stub changes (`.pyi`) are validated by `mypy.stubtest`
 - [ ] CHANGELOG updated (if user-facing change)

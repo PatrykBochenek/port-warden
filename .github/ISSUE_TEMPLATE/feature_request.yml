@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest a new feature or improvement for port-warden
+description: Suggest a new feature or improvement for portly
 labels: [enhancement]
 body:
   - type: markdown
@@ -21,7 +21,7 @@ body:
       description: How should the feature work? API sketches welcome.
       placeholder: |
         ```python
-        port_warden.wait_until_free(5432, interval=0.2)
+        portly.wait_until_free(5432, interval=0.2)
         ```
   - type: textarea
     id: alternatives

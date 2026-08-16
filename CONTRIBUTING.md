@@ -1,6 +1,6 @@
-# Contributing to port-warden
+# Contributing to portly
 
-Thanks for your interest in contributing! port-warden is a hybrid Python +
+Thanks for your interest in contributing! portly is a hybrid Python +
 Rust package: a thin PyO3 extension over a pure-Rust core. Contributions of
 all kinds are welcome — bug reports, docs, tests, and code.
 
@@ -36,11 +36,11 @@ cargo test
 # Python
 ruff check python/ tests/ examples/
 ruff format --check python/ tests/ examples/
-mypy python/port_warden tests
+mypy python/portly tests
 
 # Stubs must match the compiled extension.
 maturin develop
-python -m mypy.stubtest port_warden._lib --allowlist tests/stubtest-allowlist.txt
+python -m mypy.stubtest portly._lib --allowlist tests/stubtest-allowlist.txt
 ```
 
 There is also a pre-commit config; install it with
@@ -52,7 +52,7 @@ There is also a pre-commit config; install it with
   in `mod platform` (Linux: `procfs`, macOS: `libproc`, Windows:
   `windows-sys`). There are **no subprocess calls** — do not add `lsof`,
   `netstat`, `wmic`, or friends.
-- `python/port_warden/` — the Python package: a thin re-export shim
+- `python/portly/` — the Python package: a thin re-export shim
   (`__init__.py`), the type stubs (`_lib.pyi`), and `py.typed`.
 - `tests/` — pytest suite (run against the installed module) plus the
   stubtest allowlist.
@@ -60,7 +60,7 @@ There is also a pre-commit config; install it with
 
 ## Versioning and releases
 
-port-warden follows [SemVer](https://semver.org/). The version is
+portly follows [SemVer](https://semver.org/). The version is
 single-sourced in `Cargo.toml`; `pyproject.toml` uses `dynamic = ["version"]`.
 
 Releases are cut from the `main` branch:
@@ -69,7 +69,7 @@ Releases are cut from the `main` branch:
 2. Create an annotated tag matching the `Cargo.toml` version and push it:
 
    ```bash
-   git tag -a v0.1.1 -m "port-warden v0.1.1"
+   git tag -a v0.1.1 -m "portly v0.1.1"
    git push origin v0.1.1
    ```
 

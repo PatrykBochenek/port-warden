@@ -28,12 +28,12 @@ jobs:
       - name: Ruff format
         run: ruff format --check python/ tests/ examples/
       - name: Mypy (strict)
-        run: mypy python/port_warden tests
+        run: mypy python/portly tests
       - name: Stubtest (stubs vs runtime)
         run: |
           maturin build --out dist
           pip install dist/*.whl
-          python -m mypy.stubtest port_warden._lib --allowlist tests/stubtest-allowlist.txt
+          python -m mypy.stubtest portly._lib --allowlist tests/stubtest-allowlist.txt
       - name: Cargo fmt
         run: cargo fmt -- --check
       - name: Cargo clippy

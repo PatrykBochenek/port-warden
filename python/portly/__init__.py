@@ -1,9 +1,9 @@
-"""port-warden — cross-platform Python port management made simple.
+"""portly — cross-platform Python port management made simple.
 
 A Rust-powered library to inspect, scan and free TCP/UDP ports.
 
 Example:
-    >>> import port_warden as pw
+    >>> import portly as pw
     >>> pw.is_available(8000)
     True
     >>> port = pw.find_free(8000)
@@ -11,7 +11,7 @@ Example:
     True
 """
 
-from port_warden._lib import (
+from portly._lib import (
     __version__,
     find_free,
     get_info,

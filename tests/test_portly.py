@@ -1,4 +1,4 @@
-"""Tests for the port-warden library."""
+"""Tests for the portly library."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import subprocess
 import threading
 import time
 
-import port_warden as pw
+import portly as pw
 
 
 class TestIsAvailable:

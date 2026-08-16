@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of **port-warden**: a cross-platform, Rust-powered library
+- Initial release of **portly**: a cross-platform, Rust-powered library
   for checking, finding, scanning, waiting on, and freeing TCP/UDP ports.
 - API: `is_available`, `find_free`, `wait_until_free`, `get_info`, `kill`,
   `scan`, `__version__`.
@@ -25,5 +25,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   3.14t), wheel + sdist install tests, and a release workflow using PyPI
   Trusted Publishing with PEP 740 attestations.
 
-[Unreleased]: https://github.com/PatrykBochenek/port-warden/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/PatrykBochenek/port-warden/releases/tag/v0.1.0
+[Unreleased]: https://github.com/PatrykBochenek/portly/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/PatrykBochenek/portly/releases/tag/v0.1.0

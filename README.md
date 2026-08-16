@@ -1,14 +1,14 @@
 <div align="center">
 
-# port-warden
+# portly
 
 **Cross-platform Python port management made simple.**
 
-[![PyPI version](https://img.shields.io/pypi/v/port-warden)](https://pypi.org/project/port-warden/)
-[![Python versions](https://img.shields.io/pypi/pyversions/port-warden)](https://pypi.org/project/port-warden/)
-[![License](https://img.shields.io/pypi/l/port-warden)](https://github.com/PatrykBochenek/port-warden/blob/main/LICENSE)
-[![CI](https://github.com/PatrykBochenek/port-warden/actions/workflows/CI.yml/badge.svg)](https://github.com/PatrykBochenek/port-warden/actions/workflows/CI.yml)
-[![Typed](https://img.shields.io/badge/typing-typed-4b8bbe)](https://github.com/PatrykBochenek/port-warden/blob/main/python/port_warden/py.typed)
+[![PyPI version](https://img.shields.io/pypi/v/portly)](https://pypi.org/project/portly/)
+[![Python versions](https://img.shields.io/pypi/pyversions/portly)](https://pypi.org/project/portly/)
+[![License](https://img.shields.io/pypi/l/portly)](https://github.com/PatrykBochenek/portly/blob/main/LICENSE)
+[![CI](https://github.com/PatrykBochenek/portly/actions/workflows/CI.yml/badge.svg)](https://github.com/PatrykBochenek/portly/actions/workflows/CI.yml)
+[![Typed](https://img.shields.io/badge/typing-typed-4b8bbe)](https://github.com/PatrykBochenek/portly/blob/main/python/portly/py.typed)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 </div>
@@ -24,7 +24,7 @@ escaping issues.
 ## Installation
 
 ```bash
-pip install port-warden
+pip install portly
 ```
 
 Requires Python 3.10+. Pre-built wheels are available for Linux (manylinux &
@@ -33,27 +33,27 @@ musllinux), macOS (Intel & Apple Silicon), and Windows (x64 & arm64).
 ## Quick Start
 
 ```python
-import port_warden
+import portly
 
 # Check if a port is available
-if port_warden.is_available(8000):
+if portly.is_available(8000):
     print("Port 8000 is free!")
 
 # Find a free port (preferring 8000 if it happens to be free)
-port = port_warden.find_free(8000)
+port = portly.find_free(8000)
 
 # Wait for a port to become free (up to 30s)
-port_warden.wait_until_free(5432, timeout=30)
+portly.wait_until_free(5432, timeout=30)
 
 # Kill the process using a port
-port_warden.kill(8000)
+portly.kill(8000)
 
 # Get process info
-info = port_warden.get_info(8000)
+info = portly.get_info(8000)
 # {'pid': 1234, 'name': 'python', 'cmd': 'python app.py'}  (or None)
 
 # Scan multiple ports at once
-results = port_warden.scan([8000, 8001, 5432])
+results = portly.scan([8000, 8001, 5432])
 ```
 
 ## API Reference
@@ -83,7 +83,7 @@ results = port_warden.scan([8000, 8001, 5432])
   user; other users' listeners may report as "free"/unreachable without
   elevated privileges (same limitation as `lsof`).
 
-## Why port-warden?
+## Why portly?
 
 - **Cross-platform** — Linux, macOS, and Windows, with per-arch wheels.
 - **Fast** — Rust core; no Python socket gymnastics, no subprocess spawning.
