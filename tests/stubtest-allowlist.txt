@@ -1,0 +1,9 @@
+# Stubtest allowlist for port-warden.
+#
+# Regenerate with:
+#   python -m mypy.stubtest port_warden._lib --generate-allowlist
+# Run with:
+#   python -m mypy.stubtest port_warden._lib --allowlist tests/stubtest-allowlist.txt
+
+# TypedDict used only for typing; it does not exist at runtime.
+port_warden._lib.PortInfo
