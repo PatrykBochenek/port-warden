@@ -22,19 +22,19 @@ jobs:
           - runner: ubuntu-22.04
             target: aarch64
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.10"
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8  # v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter --locked
-          sccache: true
+          sccache: false
           manylinux: auto
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -49,19 +49,19 @@ jobs:
           - runner: ubuntu-22.04
             target: aarch64
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.10"
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8  # v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter --locked
-          sccache: true
+          sccache: false
           manylinux: musllinux_1_2
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}
           path: dist
@@ -78,19 +78,19 @@ jobs:
             target: aarch64
             python_arch: arm64
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.13"
           architecture: ${{ matrix.platform.python_arch }}
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8  # v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter --locked
-          sccache: true
+          sccache: false
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
@@ -105,18 +105,18 @@ jobs:
           - runner: macos-latest
             target: aarch64
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.10"
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8  # v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter --locked
-          sccache: true
+          sccache: false
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
@@ -124,14 +124,14 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
       - name: Build sdist
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8  # v1
         with:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6
         with:
           name: wheels-sdist
           path: dist
@@ -148,7 +148,7 @@ jobs:
       # For generating PEP 740 attestations.
       attestations: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
       - name: Verify tag matches Cargo.toml version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -157,9 +157,9 @@ jobs:
             echo "::error::Tag ${GITHUB_REF_NAME} does not match Cargo.toml version v${version}"
             exit 1
           fi
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
       - name: Generate artifact attestation
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4
         with:
           subject-path: 'wheels-*/*'
       - name: Create GitHub Release
@@ -168,7 +168,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9  # v7
+        with:
+          enable-cache: false
       - name: Publish to PyPI
         if: startsWith(github.ref, 'refs/tags/')
         run: uv publish --trusted-publishing always 'wheels-*/*'
