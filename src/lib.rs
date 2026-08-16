@@ -354,14 +354,10 @@ mod platform {
                 return out;
             };
 
-            'next: for process in processes {
-                // Processes can vanish between enumeration and inspection.
-                let Ok(process) = process else { continue };
+            'next: for process in processes.flatten() {
                 let Ok(fds) = process.fd() else { continue };
 
-                for fd in fds {
-                    // Individual fds can also disappear (or be unreadable).
-                    let Ok(fd) = fd else { continue };
+                for fd in fds.flatten() {
                     if let FDTarget::Socket(inode) = fd.target {
                         if inodes.contains(&inode) {
                             out.push(PortProcess {
