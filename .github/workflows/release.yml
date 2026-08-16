@@ -162,9 +162,16 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6  # v4
         with:
           subject-path: 'wheels-*/*'
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        run: gh release create "${GITHUB_REF_NAME}" wheels-*/* --generate-notes
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            # release-please already created the release (with changelog notes);
+            # attach the wheels to it.
+            gh release upload "${GITHUB_REF_NAME}" wheels-*/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" wheels-*/* --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Install uv
