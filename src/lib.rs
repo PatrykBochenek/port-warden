@@ -360,6 +360,8 @@ mod platform {
                 let Ok(fds) = process.fd() else { continue };
 
                 for fd in fds {
+                    // Individual fds can also disappear (or be unreadable).
+                    let Ok(fd) = fd else { continue };
                     if let FDTarget::Socket(inode) = fd.target {
                         if inodes.contains(&inode) {
                             out.push(PortProcess {
@@ -578,17 +580,20 @@ mod platform {
                 return Err(format!("GetExtendedTable failed: {result:#x}"));
             };
             debug_assert_eq!(result, NO_ERROR);
-            let table = buf.as_ptr() as *const $table_ty;
-            let count = addr_of!((*table).dwNumEntries).read_unaligned() as usize;
-            let rows: &[$row_ty] = slice::from_raw_parts(addr_of!((*table).table).cast(), count);
-            for row in rows {
-                if $matches(row) {
-                    let pid = row.dwOwningPid;
-                    // PID 0 ([System Process]) owns TIME_WAIT rows and PID 4
-                    // (System) owns kernel sockets; neither can nor should be
-                    // terminated.
-                    if pid != 0 && pid != 4 {
-                        $pids.insert(pid);
+            unsafe {
+                let table = buf.as_ptr() as *const $table_ty;
+                let count = addr_of!((*table).dwNumEntries).read_unaligned() as usize;
+                let rows: &[$row_ty] =
+                    slice::from_raw_parts(addr_of!((*table).table).cast(), count);
+                for row in rows {
+                    if $matches(row) {
+                        let pid = row.dwOwningPid;
+                        // PID 0 ([System Process]) owns TIME_WAIT rows and PID 4
+                        // (System) owns kernel sockets; neither can nor should be
+                        // terminated.
+                        if pid != 0 && pid != 4 {
+                            $pids.insert(pid);
+                        }
                     }
                 }
             }
