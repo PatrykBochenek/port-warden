@@ -11,6 +11,8 @@
 [![Typed](https://img.shields.io/badge/typing-typed-4b8bbe)](https://github.com/PatrykBochenek/portly/blob/main/python/portly/py.typed)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
+<img src="docs/portly.png" alt="portly" width="640">
+
 </div>
 
 Check whether a port is free, find a free port, wait for one to become free,
