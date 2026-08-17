@@ -1,0 +1,232 @@
+use pyo3::prelude::*;
+use pyo3::types::PyModule;
+use pyo3::IntoPyObjectExt;
+use std::collections::HashMap;
+
+use crate::model::{KillError, PortProcess};
+use crate::{kill as kill_mod, ports, probe};
+
+/// Convert an infallible Rust value into a Python object.
+fn to_pyobj<'py>(py: Python<'py>, value: impl IntoPyObject<'py>) -> Py<PyAny> {
+    value.into_py_any(py).expect("conversion is infallible")
+}
+
+/// Build the public `{"pid", "name", "cmd"}` info dict for a process.
+fn info_dict(py: Python<'_>, process: &PortProcess) -> HashMap<String, Py<PyAny>> {
+    let mut info = HashMap::new();
+    info.insert("pid".to_string(), to_pyobj(py, process.pid));
+    info.insert("name".to_string(), to_pyobj(py, process.name.clone()));
+    info.insert("cmd".to_string(), to_pyobj(py, process.cmd.clone()));
+    info
+}
+
+// =============================================================================
+// PORT AVAILABILITY
+// =============================================================================
+
+/// Check if a port is available on localhost.
+///
+/// Args:
+///     port: Port number to check (1-65535)
+///
+/// Returns:
+///     True if port is available, False if in use
+///
+/// Example:
+///     >>> import portly
+///     >>> portly.is_available(8000)
+///     True
+#[pyfunction]
+fn is_available(port: u16) -> bool {
+    if port == 0 {
+        return false;
+    }
+    ports::is_port_free(port)
+}
+
+// =============================================================================
+// FIND FREE PORT
+// =============================================================================
+
+/// Find a free port on localhost.
+///
+/// Args:
+///     preferred: Optional preferred port number. If provided and free, returns it.
+///                If occupied, returns a different free port.
+///
+/// Returns:
+///     A free port number
+///
+/// Raises:
+///     OSError: If no free port could be found
+///
+/// Note:
+///     The returned port can be taken by another process between this check
+///     and when you actually bind to it (TOCTOU). Prefer binding to port 0
+///     and letting the OS pick if you need a race-free reservation.
+///
+/// Example:
+///     >>> port = portly.find_free(8000)
+///     >>> port = portly.find_free()  # Any free port
+#[pyfunction]
+#[pyo3(signature = (preferred=None))]
+fn find_free(preferred: Option<u16>) -> PyResult<u16> {
+    ports::find_free_port(preferred)
+        .ok_or_else(|| pyo3::exceptions::PyOSError::new_err("Could not find a free port"))
+}
+
+// =============================================================================
+// WAIT UNTIL FREE
+// =============================================================================
+
+/// Wait for a port to become free.
+///
+/// Args:
+///     port: Port number to wait for
+///     timeout: Maximum seconds to wait (default: 30)
+///
+/// Returns:
+///     True if port became free, False if timeout reached
+///
+/// Example:
+///     >>> portly.wait_until_free(5432, timeout=30)
+///     True
+#[pyfunction]
+#[pyo3(signature = (port, timeout=30))]
+fn wait_until_free(py: Python<'_>, port: u16, timeout: u64) -> bool {
+    if port == 0 {
+        return false;
+    }
+    // Release the GIL while polling so other Python threads can run
+    // (e.g. the thread that will free the port we are waiting for).
+    py.detach(move || {
+        use std::time::{Duration, Instant};
+
+        let deadline = Instant::now() + Duration::from_secs(timeout);
+
+        while Instant::now() < deadline {
+            if ports::is_port_free(port) {
+                return true;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+
+        // Final check
+        ports::is_port_free(port)
+    })
+}
+
+// =============================================================================
+// GET PROCESS INFO
+// =============================================================================
+
+/// Get information about the process using a port.
+///
+/// Args:
+///     port: Port number to investigate
+///
+/// Returns:
+///     Dict with pid, name, and cmd keys, or None if the port is free
+///     (or its owner is not visible to us, e.g. it belongs to another user).
+///
+/// Note:
+///     `cmd` is the full command line on Linux, the executable path on
+///     macOS, and the executable name on Windows.
+///
+/// Example:
+///     >>> portly.get_info(8000)
+///     {'pid': 1234, 'name': 'python', 'cmd': 'python app.py'}
+///     >>> portly.get_info(9999)
+///     None
+#[pyfunction]
+fn get_info(py: Python<'_>, port: u16) -> Option<HashMap<String, Py<PyAny>>> {
+    if port == 0 || ports::is_port_free(port) {
+        return None;
+    }
+
+    // Socket-table scans can block on /proc or process enumeration; release
+    // the GIL so other Python threads can run while we look.
+    let process = py.detach(move || probe::find_processes(port, true).into_iter().next());
+
+    process.map(|p| info_dict(py, &p))
+}
+
+// =============================================================================
+// KILL PROCESS
+// =============================================================================
+
+/// Kill the process(es) using a port.
+///
+/// Args:
+///     port: Port number
+///     force: If True, use SIGKILL (SIGTERM if False). Default: False.
+///            On Windows the process is always terminated forcefully.
+///
+/// Returns:
+///     True if the port became free (or was already free)
+///
+/// Raises:
+///     PermissionError: If insufficient permissions
+///     OSError: If kill failed for another reason
+///
+/// Example:
+///     >>> portly.kill(8000)
+///     True
+///     >>> portly.kill(8000, force=True)
+///     True
+#[pyfunction]
+#[pyo3(signature = (port, force=false))]
+fn kill(py: Python<'_>, port: u16, force: bool) -> PyResult<bool> {
+    if port == 0 || ports::is_port_free(port) {
+        return Ok(true);
+    }
+
+    let freed = py.detach(move || kill_mod::kill_on_port(port, force));
+
+    match freed {
+        Ok(true) => Ok(true),
+        Ok(false) => Err(pyo3::exceptions::PyOSError::new_err(format!(
+            "Could not free port {port}: no matching process was found or it did not exit"
+        ))),
+        Err(KillError::Permission) => Err(pyo3::exceptions::PyPermissionError::new_err(format!(
+            "Permission denied to kill the process(es) using port {port} \
+             (try running with elevated privileges)"
+        ))),
+        Err(KillError::Other(msg)) => Err(pyo3::exceptions::PyOSError::new_err(msg)),
+    }
+}
+
+// =============================================================================
+// SCAN MULTIPLE PORTS
+// =============================================================================
+
+/// Scan multiple ports and return info for each.
+///
+/// Args:
+///     ports: List of port numbers
+///
+/// Returns:
+///     Dict mapping port numbers to process info (or None if free)
+///
+/// Example:
+///     >>> portly.scan([8000, 8001, 5432])
+///     {8000: {'pid': 1234, 'name': 'python', 'cmd': 'python app.py'}, 8001: None, 5432: None}
+#[pyfunction]
+fn scan(py: Python<'_>, ports: Vec<u16>) -> HashMap<u16, Option<HashMap<String, Py<PyAny>>>> {
+    ports.into_iter().map(|p| (p, get_info(py, p))).collect()
+}
+
+// =============================================================================
+// MODULE REGISTRATION
+// =============================================================================
+
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(is_available, m)?)?;
+    m.add_function(wrap_pyfunction!(find_free, m)?)?;
+    m.add_function(wrap_pyfunction!(wait_until_free, m)?)?;
+    m.add_function(wrap_pyfunction!(get_info, m)?)?;
+    m.add_function(wrap_pyfunction!(kill, m)?)?;
+    m.add_function(wrap_pyfunction!(scan, m)?)?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    Ok(())
+}
