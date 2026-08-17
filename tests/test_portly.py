@@ -8,6 +8,8 @@ import subprocess
 import threading
 import time
 
+import pytest
+
 import portly as pw
 
 
@@ -197,3 +199,64 @@ class TestVersion:
 
     def test_version_exists(self) -> None:
         assert isinstance(pw.__version__, str)
+
+
+class TestExceptions:
+    """Tests for the typed exception hierarchy."""
+
+    def test_portly_error_is_oserror_subclass(self) -> None:
+        assert issubclass(pw.PortlyError, OSError)
+
+    def test_portly_port_error_is_portly_error_subclass(self) -> None:
+        assert issubclass(pw.PortlyPortError, pw.PortlyError)
+
+    def test_portly_port_error_is_oserror_subclass(self) -> None:
+        assert issubclass(pw.PortlyPortError, OSError)
+
+    def test_portly_permission_error_is_portly_error_subclass(self) -> None:
+        assert issubclass(pw.PortlyPermissionError, pw.PortlyError)
+
+    def test_portly_permission_error_is_permission_error_subclass(self) -> None:
+        assert issubclass(pw.PortlyPermissionError, PermissionError)
+
+    def test_portly_permission_error_is_oserror_subclass(self) -> None:
+        assert issubclass(pw.PortlyPermissionError, OSError)
+
+    def test_portly_permission_error_multiple_inheritance_mro(self) -> None:
+        assert pw.PortlyError in pw.PortlyPermissionError.__mro__
+        assert PermissionError in pw.PortlyPermissionError.__mro__
+        assert OSError in pw.PortlyPermissionError.__mro__
+
+    def test_portly_port_error_caught_as_oserror(self) -> None:
+        exc = pw.PortlyPortError("no free port")
+        with pytest.raises(pw.PortlyPortError):
+            raise exc
+        with pytest.raises(pw.PortlyError):
+            raise exc
+        with pytest.raises(OSError):
+            raise exc
+
+    def test_portly_permission_error_caught_as_portly_error(self) -> None:
+        exc = pw.PortlyPermissionError("permission denied")
+        with pytest.raises(pw.PortlyPermissionError):
+            raise exc
+        with pytest.raises(pw.PortlyError):
+            raise exc
+
+    def test_portly_permission_error_caught_as_permission_error(self) -> None:
+        exc = pw.PortlyPermissionError("permission denied")
+        with pytest.raises(PermissionError):
+            raise exc
+        with pytest.raises(OSError):
+            raise exc
+
+    def test_exceptions_exported_from_public_module(self) -> None:
+        assert "PortlyError" in pw.__all__
+        assert "PortlyPortError" in pw.__all__
+        assert "PortlyPermissionError" in pw.__all__
+
+    def test_exceptions_available_from_extension_module(self) -> None:
+        import portly._lib as _lib
+
+        assert _lib.PortlyError is pw.PortlyError
+        assert _lib.PortlyPortError is pw.PortlyPortError
