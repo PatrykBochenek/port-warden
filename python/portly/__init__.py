@@ -12,7 +12,10 @@ Example:
 """
 
 from portly._lib import (
+    PortlyError,
+    PortlyPortError,
     __version__,
+    _register_permission_error,
     find_free,
     get_info,
     is_available,
@@ -21,7 +24,25 @@ from portly._lib import (
     wait_until_free,
 )
 
+
+class PortlyPermissionError(PortlyError, PermissionError):
+    """Permission denied when inspecting or killing a process.
+
+    Multiple inheritance keeps two common error-handling patterns working:
+
+    * ``except PortlyError`` catches every portly-specific failure.
+    * ``except PermissionError`` (and therefore ``except OSError``) keeps
+      existing callers working unchanged.
+    """
+
+
+# Register the Python-side class so the Rust extension can raise it directly.
+_register_permission_error(PortlyPermissionError)
+
 __all__ = [
+    "PortlyError",
+    "PortlyPermissionError",
+    "PortlyPortError",
     "__version__",
     "find_free",
     "get_info",

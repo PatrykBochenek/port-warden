@@ -1,5 +1,8 @@
 from portly._lib import (
-    PortInfo as PortInfo,
+    PortlyError as PortlyError,
+)
+from portly._lib import (
+    PortlyPortError as PortlyPortError,
 )
 from portly._lib import (
     __version__ as __version__,
@@ -23,8 +26,17 @@ from portly._lib import (
     wait_until_free as wait_until_free,
 )
 
+class PortlyPermissionError(PortlyError, PermissionError):
+    """Permission denied when inspecting or killing a process.
+
+    Multiple inheritance keeps both ``except PortlyError`` and
+    ``except PermissionError`` handling working.
+    """
+
 __all__ = [
-    "PortInfo",
+    "PortlyError",
+    "PortlyPermissionError",
+    "PortlyPortError",
     "__version__",
     "find_free",
     "get_info",

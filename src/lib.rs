@@ -16,8 +16,10 @@
 //! The platform-specific socket→process logic is adapted from the
 //! MIT-licensed [`killport`](https://github.com/jkfran/killport) project.
 
+use pyo3::create_exception;
 use pyo3::prelude::*;
-use pyo3::types::PyModule;
+use pyo3::sync::PyOnceLock;
+use pyo3::types::{PyModule, PyType};
 use pyo3::IntoPyObjectExt;
 use std::collections::HashMap;
 
@@ -36,6 +38,50 @@ enum KillError {
     Permission,
     /// Any other failure, with a human-readable reason.
     Other(String),
+}
+
+// =============================================================================
+// EXCEPTION HIERARCHY
+// =============================================================================
+
+create_exception!(
+    portly._lib,
+    PortlyError,
+    pyo3::exceptions::PyOSError,
+    "Base class for all portly errors."
+);
+
+create_exception!(
+    portly._lib,
+    PortlyPortError,
+    PortlyError,
+    "Port-related failure (e.g. no free port found, or a port could not be freed)."
+);
+
+/// Python type for `PortlyPermissionError`.
+///
+/// The concrete class is defined in Python so it can multiply inherit from
+/// both `PortlyError` and `PermissionError`; Rust raises instances of the
+/// registered type at runtime.
+static PORTLY_PERMISSION_ERROR: PyOnceLock<Py<PyType>> = PyOnceLock::new();
+
+/// Register the Python-side `PortlyPermissionError` class with Rust.
+#[pyfunction]
+fn _register_permission_error(exc: Bound<'_, PyType>) {
+    let _ = PORTLY_PERMISSION_ERROR.set(exc.py(), exc.unbind());
+}
+
+/// Raise a `PortlyPermissionError` with `msg`.
+fn portly_permission_error(py: Python<'_>, msg: String) -> PyErr {
+    match PORTLY_PERMISSION_ERROR.get(py) {
+        Some(exc_type) => {
+            let exc_obj = exc_type
+                .call1(py, (msg,))
+                .expect("PortlyPermissionError constructor failed");
+            PyErr::from_value(exc_obj.into_bound(py))
+        }
+        None => pyo3::exceptions::PyPermissionError::new_err(msg),
+    }
 }
 
 /// Convert an infallible Rust value into a Python object.
@@ -107,7 +153,7 @@ fn is_available(port: u16) -> bool {
 ///     A free port number
 ///
 /// Raises:
-///     OSError: If no free port could be found
+///     PortlyPortError: If no free port could be found
 ///
 /// Note:
 ///     The returned port can be taken by another process between this check
@@ -126,7 +172,7 @@ fn find_free(preferred: Option<u16>) -> PyResult<u16> {
         }
     }
     port_check::free_local_port()
-        .ok_or_else(|| pyo3::exceptions::PyOSError::new_err("Could not find a free port"))
+        .ok_or_else(|| PortlyPortError::new_err("Could not find a free port"))
 }
 
 // =============================================================================
@@ -220,8 +266,8 @@ fn get_info(py: Python<'_>, port: u16) -> Option<HashMap<String, Py<PyAny>>> {
 ///     True if the port became free (or was already free)
 ///
 /// Raises:
-///     PermissionError: If insufficient permissions
-///     OSError: If kill failed for another reason
+///     PortlyPermissionError: If insufficient permissions
+///     PortlyPortError: If kill failed for another reason
 ///
 /// Example:
 ///     >>> portly.kill(8000)
@@ -239,14 +285,17 @@ fn kill(py: Python<'_>, port: u16, force: bool) -> PyResult<bool> {
 
     match freed {
         Ok(true) => Ok(true),
-        Ok(false) => Err(pyo3::exceptions::PyOSError::new_err(format!(
+        Ok(false) => Err(PortlyPortError::new_err(format!(
             "Could not free port {port}: no matching process was found or it did not exit"
         ))),
-        Err(KillError::Permission) => Err(pyo3::exceptions::PyPermissionError::new_err(format!(
-            "Permission denied to kill the process(es) using port {port} \
-             (try running with elevated privileges)"
-        ))),
-        Err(KillError::Other(msg)) => Err(pyo3::exceptions::PyOSError::new_err(msg)),
+        Err(KillError::Permission) => Err(portly_permission_error(
+            py,
+            format!(
+                "Permission denied to kill the process(es) using port {port} \
+                 (try running with elevated privileges)"
+            ),
+        )),
+        Err(KillError::Other(msg)) => Err(PortlyPortError::new_err(msg)),
     }
 }
 
@@ -820,6 +869,27 @@ fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_info, m)?)?;
     m.add_function(wrap_pyfunction!(kill, m)?)?;
     m.add_function(wrap_pyfunction!(scan, m)?)?;
+    m.add_function(wrap_pyfunction!(_register_permission_error, m)?)?;
+    let py = m.py();
+    m.add("PortlyError", py.get_type::<PortlyError>())?;
+    m.add("PortlyPortError", py.get_type::<PortlyPortError>())?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add(
+        "__all__",
+        to_pyobj(
+            py,
+            vec![
+                "PortlyError",
+                "PortlyPortError",
+                "__version__",
+                "find_free",
+                "get_info",
+                "is_available",
+                "kill",
+                "scan",
+                "wait_until_free",
+            ],
+        ),
+    )?;
     Ok(())
 }
