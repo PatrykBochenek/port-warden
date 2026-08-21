@@ -24,6 +24,11 @@ build/
 *.swp
 *.swo
 
+# Coverage
+coverage.xml
+htmlcov/
+.coverage*
+
 # OS
 .DS_Store
 Thumbs.db
