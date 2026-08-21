@@ -197,3 +197,48 @@ class TestVersion:
 
     def test_version_exists(self) -> None:
         assert isinstance(pw.__version__, str)
+
+
+class TestWaitForServer:
+    """Tests for wait_for_server."""
+
+    def test_server_already_listening(self) -> None:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = int(server.getsockname()[1])
+        try:
+            assert pw.wait_for_server(port, timeout=5) is True
+        finally:
+            server.close()
+
+    def test_waits_until_server_starts(self) -> None:
+        port = _reserve_free_port()
+
+        def start_server() -> None:
+            time.sleep(0.5)
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server.bind(("127.0.0.1", port))
+            server.listen(1)
+            time.sleep(2)
+            server.close()
+
+        thread = threading.Thread(target=start_server, daemon=True)
+        thread.start()
+        try:
+            assert pw.wait_for_server(port, timeout=5) is True
+        finally:
+            thread.join(timeout=5)
+
+    def test_timeout_returns_false(self) -> None:
+        port = _reserve_free_port()
+        assert pw.wait_for_server(port, timeout=1, interval=0.1) is False
+
+
+def _reserve_free_port() -> int:
+    """Return a port that is currently free (may be reused by a waiter)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])

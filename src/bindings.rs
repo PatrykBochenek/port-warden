@@ -117,6 +117,69 @@ fn wait_until_free(py: Python<'_>, port: u16, timeout: u64) -> bool {
 }
 
 // =============================================================================
+// WAIT FOR SERVER
+// =============================================================================
+
+/// Wait for a server to start accepting TCP connections on a port.
+///
+/// Args:
+///     port: Port number to watch
+///     host: Host to connect to (default: "127.0.0.1")
+///     timeout: Maximum seconds to wait (default: 30)
+///     interval: Seconds between connection attempts (default: 0.1)
+///
+/// Returns:
+///     True once the port accepts a connection, False on timeout.
+///
+/// Example:
+///     >>> portly.wait_for_server(8000, timeout=30)
+///     True
+#[pyfunction]
+#[pyo3(signature = (port, host="127.0.0.1", timeout=30, interval=0.1))]
+fn wait_for_server(py: Python<'_>, port: u16, host: &str, timeout: u64, interval: f64) -> bool {
+    if port == 0 {
+        return false;
+    }
+    let host = host.to_string();
+    let interval = interval.max(0.0);
+    // Release the GIL while polling so other Python threads can run.
+    py.detach(move || {
+        use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+        use std::time::{Duration, Instant};
+
+        // Resolve once; empty means the host is invalid -> cannot accept.
+        let addrs: Vec<SocketAddr> = match format!("{host}:{port}").to_socket_addrs() {
+            Ok(addrs) => addrs.collect(),
+            Err(_) => return false,
+        };
+        if addrs.is_empty() {
+            return false;
+        }
+
+        // Per-attempt connect timeout: short enough that a silent host does not
+        // hold up the whole timeout, generous enough for a slow accept backlog.
+        let attempt_timeout = Duration::from_secs(1);
+
+        let deadline = Instant::now() + Duration::from_secs(timeout);
+        let accepts = || {
+            addrs
+                .iter()
+                .any(|addr| TcpStream::connect_timeout(addr, attempt_timeout).is_ok())
+        };
+
+        while Instant::now() < deadline {
+            if accepts() {
+                return true;
+            }
+            std::thread::sleep(Duration::from_secs_f64(interval));
+        }
+
+        // Final attempt after the deadline.
+        accepts()
+    })
+}
+
+// =============================================================================
 // GET PROCESS INFO
 // =============================================================================
 
@@ -224,6 +287,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_available, m)?)?;
     m.add_function(wrap_pyfunction!(find_free, m)?)?;
     m.add_function(wrap_pyfunction!(wait_until_free, m)?)?;
+    m.add_function(wrap_pyfunction!(wait_for_server, m)?)?;
     m.add_function(wrap_pyfunction!(get_info, m)?)?;
     m.add_function(wrap_pyfunction!(kill, m)?)?;
     m.add_function(wrap_pyfunction!(scan, m)?)?;

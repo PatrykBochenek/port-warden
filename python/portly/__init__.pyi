@@ -20,6 +20,9 @@ from portly._lib import (
     scan as scan,
 )
 from portly._lib import (
+    wait_for_server as wait_for_server,
+)
+from portly._lib import (
     wait_until_free as wait_until_free,
 )
 
@@ -31,5 +34,6 @@ __all__ = [
     "is_available",
     "kill",
     "scan",
+    "wait_for_server",
     "wait_until_free",
 ]

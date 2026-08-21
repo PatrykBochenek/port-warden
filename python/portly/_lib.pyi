@@ -31,6 +31,16 @@ def wait_until_free(port: int, timeout: int = 30) -> bool:
     """
     ...
 
+def wait_for_server(
+    port: int, host: str = "127.0.0.1", timeout: int = 30, interval: float = 0.1
+) -> bool:
+    """Wait up to *timeout* seconds for a server to accept connections on *port*.
+
+    Polls *host*:*port* with TCP connect attempts every *interval* seconds.
+    Returns True once the port accepts a connection, False on timeout.
+    """
+    ...
+
 def get_info(port: int) -> PortInfo | None:
     """Return information about the process listening on *port*.
 
@@ -64,5 +74,6 @@ __all__ = [
     "is_available",
     "kill",
     "scan",
+    "wait_for_server",
     "wait_until_free",
 ]
