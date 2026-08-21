@@ -41,4 +41,91 @@ mod tests {
         let processes = find_processes(port, true);
         assert!(processes.is_empty());
     }
+
+    #[test]
+    fn finds_ipv6_listener_in_current_process() {
+        let listener = TcpListener::bind("[::1]:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let processes = find_processes(port, true);
+        assert_eq!(processes.len(), 1, "expected one process on the IPv6 port");
+        assert_eq!(processes[0].pid, std::process::id());
+    }
+
+    #[test]
+    fn finds_udp_socket_in_current_process() {
+        use std::net::UdpSocket;
+
+        let sock = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let port = sock.local_addr().unwrap().port();
+        // UDP sockets are only attributed when not listen-only (see platform
+        // probe docs: listen-only covers TCP LISTEN for get_info).
+        let processes = find_processes(port, false);
+        assert_eq!(processes.len(), 1, "expected one process on the UDP port");
+        assert_eq!(processes[0].pid, std::process::id());
+    }
+
+    #[test]
+    fn deduplicates_dual_stack_listeners_on_same_port() {
+        // An IPv4 and an IPv6 listener bound to the *same* port in this
+        // process must surface as exactly one process entry.
+        let v4 = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = v4.local_addr().unwrap().port();
+        let v6 = TcpListener::bind(format!("[::1]:{port}")).unwrap();
+        assert_eq!(v6.local_addr().unwrap().port(), port);
+
+        let processes = find_processes(port, true);
+        assert_eq!(processes.len(), 1, "dual-stack listeners must deduplicate");
+        assert_eq!(processes[0].pid, std::process::id());
+    }
+
+    #[test]
+    fn finds_listener_when_process_has_many_fds() {
+        // Regression: the socket-fd scan used to stop at the first 1024 fds.
+        // Open >1024 sockets first so the listener under test gets a high fd
+        // index, then confirm the probe still finds it.
+        #[cfg(unix)]
+        {
+            let rlim = libc::rlimit {
+                rlim_cur: 4096,
+                rlim_max: 8192,
+            };
+            let _ = unsafe { libc::setrlimit(libc::RLIMIT_NOFILE, &rlim) };
+        }
+
+        let mut sockets = Vec::new();
+        while sockets.len() < 1100 {
+            match TcpListener::bind("127.0.0.1:0") {
+                Ok(s) => sockets.push(s),
+                Err(_) => break, // environment refused; still verify below
+            }
+        }
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let processes = find_processes(port, true);
+        assert_eq!(
+            processes.len(),
+            1,
+            "expected one process on the high-fd port"
+        );
+        assert_eq!(processes[0].pid, std::process::id());
+    }
+
+    #[test]
+    fn port_freed_after_close_has_no_processes() {
+        // A listener that was bound and then closed must not appear as a
+        // process owner once the socket is gone.
+        let (port, processes_while_open);
+        {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            port = listener.local_addr().unwrap().port();
+            processes_while_open = find_processes(port, true);
+            assert_eq!(processes_while_open.len(), 1);
+        }
+        let processes_after_close = find_processes(port, true);
+        assert!(
+            processes_after_close.is_empty(),
+            "closed port still reported: {processes_after_close:?}"
+        );
+    }
 }
