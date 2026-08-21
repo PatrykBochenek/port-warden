@@ -13,6 +13,32 @@ pub fn find_free_port(preferred: Option<u16>) -> Option<u16> {
     port_check::free_local_port()
 }
 
+/// Find `count` distinct free ports within `[lo, hi]` (inclusive), scanning
+/// upward from `lo`. Returns fewer than `count` (possibly empty) if the range
+/// is exhausted — the caller decides whether that is an error.
+pub fn find_free_ports_in_range(lo: u16, hi: u16, count: usize) -> Vec<u16> {
+    let mut found = Vec::new();
+    if lo == 0 || lo > hi || count == 0 {
+        return found;
+    }
+
+    let mut cursor = lo;
+    loop {
+        // Port 0 is never a usable free port; skip it if it appears.
+        if cursor != 0 && port_check::is_local_port_free(cursor) {
+            found.push(cursor);
+            if found.len() == count {
+                break;
+            }
+        }
+        if cursor == hi {
+            break;
+        }
+        cursor += 1;
+    }
+    found
+}
+
 /// Wait up to ~1s for the port to become free, polling every 50ms.
 ///
 /// Returns `true` once the port is actually free, so callers report the

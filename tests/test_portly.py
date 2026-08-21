@@ -8,6 +8,8 @@ import subprocess
 import threading
 import time
 
+import pytest
+
 import portly as pw
 
 
@@ -237,8 +239,54 @@ class TestWaitForServer:
         assert pw.wait_for_server(port, timeout=1, interval=0.1) is False
 
 
+class TestFindFreeInRange:
+    """Tests for find_free_in_range."""
+
+    def test_single_free_port_in_range(self) -> None:
+        lo, hi = 40000, 40100
+        port = pw.find_free_in_range(lo, hi)
+        assert isinstance(port, int)
+        assert lo <= port <= hi
+        assert pw.is_available(port) is True
+
+    def test_count_returns_distinct_ports(self) -> None:
+        lo, hi = 40100, 40200
+        ports = pw.find_free_in_range(lo, hi, count=3)
+        assert isinstance(ports, list)
+        assert len(ports) == 3
+        assert len(set(ports)) == 3
+        assert all(lo <= p <= hi for p in ports)
+        assert all(pw.is_available(p) for p in ports)
+
+    def test_lo_gt_hi_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            pw.find_free_in_range(hi=1024, lo=65535)
+
+    def test_no_free_port_in_range_raises(self) -> None:
+        # Reserve a port, then ask for more free ports than the range holds.
+        busy = pw.find_free()
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(("127.0.0.1", busy))
+        server.listen(1)
+        try:
+            with pytest.raises(OSError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+
 def _reserve_free_port() -> int:
     """Return a port that is currently free (may be reused by a waiter)."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
+
+
+def _bind_listener() -> tuple[socket.socket, int]:
+    """Bind and listen on a fresh port; returns (socket, port)."""
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    return server, int(server.getsockname()[1])

@@ -180,6 +180,54 @@ fn wait_for_server(py: Python<'_>, port: u16, host: &str, timeout: u64, interval
 }
 
 // =============================================================================
+// FIND FREE IN RANGE
+// =============================================================================
+
+/// Find free port(s) within a range.
+///
+/// Args:
+///     lo: Lower bound of the range, inclusive (default: 1024)
+///     hi: Upper bound of the range, inclusive (default: 65535)
+///     count: Number of distinct free ports to find (default: 1)
+///
+/// Returns:
+///     A free port number when count is 1, otherwise a list of distinct free
+///     port numbers within `[lo, hi]`.
+///
+/// Raises:
+///     ValueError: If the range is invalid (`lo > hi`).
+///     OSError: If fewer than `count` free ports exist in the range.
+///
+/// Example:
+///     >>> portly.find_free_in_range(8000, 8100)
+///     8003
+///     >>> portly.find_free_in_range(8000, 8100, count=3)
+///     [8003, 8004, 8007]
+#[pyfunction]
+#[pyo3(signature = (lo=1024, hi=65535, count=1))]
+fn find_free_in_range(py: Python<'_>, lo: u16, hi: u16, count: u16) -> PyResult<Py<PyAny>> {
+    if lo > hi {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "lo ({lo}) must be <= hi ({hi})"
+        )));
+    }
+    if count == 0 {
+        return Vec::<u16>::new().into_py_any(py);
+    }
+    let found = ports::find_free_ports_in_range(lo, hi, count as usize);
+    if found.len() < count as usize {
+        return Err(pyo3::exceptions::PyOSError::new_err(format!(
+            "Could not find {count} free port(s) in range [{lo}, {hi}]"
+        )));
+    }
+    if count == 1 {
+        Ok(found[0].into_py_any(py)?)
+    } else {
+        Ok(found.into_py_any(py)?)
+    }
+}
+
+// =============================================================================
 // GET PROCESS INFO
 // =============================================================================
 
@@ -286,6 +334,7 @@ fn scan(py: Python<'_>, ports: Vec<u16>) -> HashMap<u16, Option<HashMap<String, 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_available, m)?)?;
     m.add_function(wrap_pyfunction!(find_free, m)?)?;
+    m.add_function(wrap_pyfunction!(find_free_in_range, m)?)?;
     m.add_function(wrap_pyfunction!(wait_until_free, m)?)?;
     m.add_function(wrap_pyfunction!(wait_for_server, m)?)?;
     m.add_function(wrap_pyfunction!(get_info, m)?)?;

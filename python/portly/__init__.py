@@ -14,6 +14,7 @@ Example:
 from portly._lib import (
     __version__,
     find_free,
+    find_free_in_range,
     get_info,
     is_available,
     kill,
@@ -25,6 +26,7 @@ from portly._lib import (
 __all__ = [
     "__version__",
     "find_free",
+    "find_free_in_range",
     "get_info",
     "is_available",
     "kill",

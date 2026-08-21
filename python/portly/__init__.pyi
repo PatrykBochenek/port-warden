@@ -8,6 +8,9 @@ from portly._lib import (
     find_free as find_free,
 )
 from portly._lib import (
+    find_free_in_range as find_free_in_range,
+)
+from portly._lib import (
     get_info as get_info,
 )
 from portly._lib import (
@@ -30,6 +33,7 @@ __all__ = [
     "PortInfo",
     "__version__",
     "find_free",
+    "find_free_in_range",
     "get_info",
     "is_available",
     "kill",

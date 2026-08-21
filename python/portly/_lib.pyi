@@ -24,6 +24,18 @@ def find_free(preferred: int | None = None) -> int:
     """
     ...
 
+def find_free_in_range(lo: int = 1024, hi: int = 65535, count: int = 1) -> int | list[int]:
+    """Return free port(s) within the inclusive range ``[lo, hi]``.
+
+    Returns a single port number when *count* is 1, otherwise a list of
+    distinct free ports.
+
+    Raises:
+        ValueError: If *lo* > *hi*.
+        OSError: If fewer than *count* free ports exist in the range.
+    """
+    ...
+
 def wait_until_free(port: int, timeout: int = 30) -> bool:
     """Wait up to *timeout* seconds for *port* to become free.
 
@@ -70,6 +82,7 @@ __version__: str
 __all__ = [
     "__version__",
     "find_free",
+    "find_free_in_range",
     "get_info",
     "is_available",
     "kill",
