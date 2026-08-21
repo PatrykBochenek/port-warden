@@ -11,6 +11,7 @@ import time
 import pytest
 
 import portly as pw
+from portly import PortlyError, PortlyPermissionError, PortlyPortError
 
 
 class TestIsAvailable:
@@ -271,6 +272,42 @@ class TestFindFreeInRange:
         server.listen(1)
         try:
             with pytest.raises(OSError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+
+class TestExceptionHierarchy:
+    """Tests for the typed exception hierarchy."""
+
+    def test_errors_are_oserror_subclasses(self) -> None:
+        assert issubclass(PortlyError, Exception)
+        assert issubclass(PortlyPortError, OSError)
+        assert issubclass(PortlyPermissionError, PermissionError)
+        assert issubclass(PortlyPermissionError, OSError)
+
+    def test_find_free_exhaustion_is_portly_port_error(self) -> None:
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyPortError):
+                pw.find_free_in_range(busy, busy)
+            # Still caught by a plain `except OSError`.
+            with pytest.raises(OSError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+    def test_exhausted_range_raises_portly_port_error(self) -> None:
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyPortError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+        # Also verify it is catchable as the base error.
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyError):
                 pw.find_free_in_range(busy, busy)
         finally:
             server.close()
