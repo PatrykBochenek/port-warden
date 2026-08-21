@@ -8,7 +8,10 @@ import subprocess
 import threading
 import time
 
+import pytest
+
 import portly as pw
+from portly import PortlyError, PortlyPermissionError, PortlyPortError
 
 
 class TestIsAvailable:
@@ -197,3 +200,130 @@ class TestVersion:
 
     def test_version_exists(self) -> None:
         assert isinstance(pw.__version__, str)
+
+
+class TestWaitForServer:
+    """Tests for wait_for_server."""
+
+    def test_server_already_listening(self) -> None:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(("127.0.0.1", 0))
+        server.listen(1)
+        port = int(server.getsockname()[1])
+        try:
+            assert pw.wait_for_server(port, timeout=5) is True
+        finally:
+            server.close()
+
+    def test_waits_until_server_starts(self) -> None:
+        port = _reserve_free_port()
+
+        def start_server() -> None:
+            time.sleep(0.5)
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server.bind(("127.0.0.1", port))
+            server.listen(1)
+            time.sleep(2)
+            server.close()
+
+        thread = threading.Thread(target=start_server, daemon=True)
+        thread.start()
+        try:
+            assert pw.wait_for_server(port, timeout=5) is True
+        finally:
+            thread.join(timeout=5)
+
+    def test_timeout_returns_false(self) -> None:
+        port = _reserve_free_port()
+        assert pw.wait_for_server(port, timeout=1, interval=0.1) is False
+
+
+class TestFindFreeInRange:
+    """Tests for find_free_in_range."""
+
+    def test_single_free_port_in_range(self) -> None:
+        lo, hi = 40000, 40100
+        port = pw.find_free_in_range(lo, hi)
+        assert isinstance(port, int)
+        assert lo <= port <= hi
+        assert pw.is_available(port) is True
+
+    def test_count_returns_distinct_ports(self) -> None:
+        lo, hi = 40100, 40200
+        ports = pw.find_free_in_range(lo, hi, count=3)
+        assert isinstance(ports, list)
+        assert len(ports) == 3
+        assert len(set(ports)) == 3
+        assert all(lo <= p <= hi for p in ports)
+        assert all(pw.is_available(p) for p in ports)
+
+    def test_lo_gt_hi_raises_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            pw.find_free_in_range(hi=1024, lo=65535)
+
+    def test_no_free_port_in_range_raises(self) -> None:
+        # Reserve a port, then ask for more free ports than the range holds.
+        busy = pw.find_free()
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(("127.0.0.1", busy))
+        server.listen(1)
+        try:
+            with pytest.raises(OSError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+
+class TestExceptionHierarchy:
+    """Tests for the typed exception hierarchy."""
+
+    def test_errors_are_oserror_subclasses(self) -> None:
+        assert issubclass(PortlyError, Exception)
+        assert issubclass(PortlyPortError, OSError)
+        assert issubclass(PortlyPermissionError, PermissionError)
+        assert issubclass(PortlyPermissionError, OSError)
+
+    def test_find_free_exhaustion_is_portly_port_error(self) -> None:
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyPortError):
+                pw.find_free_in_range(busy, busy)
+            # Still caught by a plain `except OSError`.
+            with pytest.raises(OSError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+    def test_exhausted_range_raises_portly_port_error(self) -> None:
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyPortError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+        # Also verify it is catchable as the base error.
+        server, busy = _bind_listener()
+        try:
+            with pytest.raises(PortlyError):
+                pw.find_free_in_range(busy, busy)
+        finally:
+            server.close()
+
+
+def _reserve_free_port() -> int:
+    """Return a port that is currently free (may be reused by a waiter)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _bind_listener() -> tuple[socket.socket, int]:
+    """Bind and listen on a fresh port; returns (socket, port)."""
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    return server, int(server.getsockname()[1])
