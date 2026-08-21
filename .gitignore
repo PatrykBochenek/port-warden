@@ -29,6 +29,10 @@ coverage.xml
 htmlcov/
 .coverage*
 
+# Docs (mkdocs build output)
+site/
+_site/
+
 # OS
 .DS_Store
 Thumbs.db
