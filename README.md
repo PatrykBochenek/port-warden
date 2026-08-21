@@ -9,6 +9,7 @@
 [![License](https://img.shields.io/pypi/l/portly?cacheSeconds=3600)](https://github.com/PatrykBochenek/portly/blob/main/LICENSE)
 [![CI](https://github.com/PatrykBochenek/portly/actions/workflows/CI.yml/badge.svg)](https://github.com/PatrykBochenek/portly/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/PatrykBochenek/portly/branch/main/graph/badge.svg)](https://codecov.io/gh/PatrykBochenek/portly)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-4b8bbe)](https://patrykbochenek.github.io/portly/)
 [![Typed](https://img.shields.io/badge/typing-typed-4b8bbe)](https://github.com/PatrykBochenek/portly/blob/main/python/portly/py.typed)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
